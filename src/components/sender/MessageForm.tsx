@@ -232,7 +232,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../context/AuthContext'; // Added useAuth import
-import { messagesApi } from '../../services/api';
+import { messagesApi, messageLinksApi } from '../../services/api';
 import { AxiosError } from 'axios'; // Added import
 import { VALIDATION_ERRORS, MESSAGE_ERRORS } from '../constants/errorMessages'; // Modified import
 import { classNames } from '../../utils/classNames';
@@ -255,6 +255,7 @@ const messageSchema = z.object({
     .min(10, VALIDATION_ERRORS.REACTION_LENGTH_MIN)
     .max(30, VALIDATION_ERRORS.REACTION_LENGTH_MAX)
     .default(15),
+  createOneTimeLink: z.boolean().default(false),
 });
 
 type MessageFormValues = z.infer<typeof messageSchema>;
@@ -275,6 +276,8 @@ const MessageForm: React.FC<MessageFormProps> = ({ className }) => {
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shareableLink, setShareableLink] = useState<string>('');
+  const [createdMessageId, setCreatedMessageId] = useState<string>('');
+  const [linkStats, setLinkStats] = useState({ liveOneTime: 0, expiredOneTime: 0 });
   
   // React Hook Form setup
   const {
@@ -291,6 +294,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ className }) => {
       hasPasscode: false,
       passcode: '',
       reaction_length: 15,
+      createOneTimeLink: false,
     },
   });
   
@@ -298,6 +302,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ className }) => {
   const hasPasscode = watch('hasPasscode');
   const passcode = watch('passcode');
   const reactionLengthValue = watch('reaction_length');
+  const createOneTimeLink = watch('createOneTimeLink');
   
   // Handle media upload
   const handleMediaSelect = useCallback((file: File | null) => {
@@ -357,13 +362,38 @@ const MessageForm: React.FC<MessageFormProps> = ({ className }) => {
 
       // Add reaction length
       formData.append('reaction_length', data.reaction_length.toString());
+      formData.append('onetime', 'false');
       
       // Call API to create message with FormData
       const response = await messagesApi.createWithFormData(formData);
-      
-      // Set the shareable link from the response
+
       if (response.data.shareableLink) {
         setShareableLink(response.data.shareableLink);
+      }
+      if (response.data.id) {
+        setCreatedMessageId(response.data.id);
+      }
+
+      if (createOneTimeLink && response.data.id) {
+        try {
+          await messageLinksApi.create(response.data.id, true);
+        } catch {
+          // ignore error, toast handled globally
+        }
+      }
+
+      if (response.data.id) {
+        try {
+          const statsRes = await messageLinksApi.list(response.data.id);
+          if (statsRes.data.stats) {
+            setLinkStats({
+              liveOneTime: statsRes.data.stats.liveOneTime || 0,
+              expiredOneTime: statsRes.data.stats.expiredOneTime || 0,
+            });
+          }
+        } catch {
+          // ignore stats errors
+        }
       }
       
       // Show success message
@@ -416,6 +446,8 @@ const MessageForm: React.FC<MessageFormProps> = ({ className }) => {
         shareableLink={shareableLink}
         hasPasscode={hasPasscode}
         passcode={passcode}
+        messageId={createdMessageId}
+        initialStats={linkStats}
         className={className}
       />
     );
@@ -508,6 +540,33 @@ const MessageForm: React.FC<MessageFormProps> = ({ className }) => {
         />
       </div>
 
+      {/* Create first one-time link option */}
+      <div className="flex items-center">
+        <Controller
+          name="createOneTimeLink"
+          control={control}
+          render={({ field }) => (
+            <input
+              type="checkbox"
+              id="createOneTimeLink"
+              checked={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              name={field.name}
+              ref={field.ref}
+              className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-600 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:ring-primary-500"
+              disabled={isMessageLimitReached}
+            />
+          )}
+        />
+        <label
+          htmlFor="createOneTimeLink"
+          className="ml-2 text-sm font-medium text-neutral-900 dark:text-neutral-100"
+        >
+          Create a one-time link
+        </label>
+      </div>
+
       {/* Reaction Length Slider */}
       <div>
         <label
@@ -539,7 +598,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ className }) => {
           </p>
         )}
       </div>
-      
+
       {/* Submit button */}
       <div className="flex justify-end">
         <Button

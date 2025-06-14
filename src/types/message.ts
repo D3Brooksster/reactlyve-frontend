@@ -16,6 +16,8 @@ export interface Message {
   url?: string;
   viewCount?: number;
   viewed?: boolean;
+  onetime?: boolean;
+  linkId?: string;
   createdAt: string;
   updatedAt?: string;
   videoUrl?: string | null;
@@ -52,5 +54,13 @@ export interface MessageFormData {
 
 export interface MessageWithReactions extends Message {
   reactions: Reaction[];
+}
+
+export interface MessageLink {
+  id: string;
+  onetime: boolean;
+  viewed: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 

@@ -96,11 +96,27 @@ export const messagesApi = {
   submitForManualReview: (messageId: string) => api.post(`/messages/${messageId}/manual-review`),
 };
 
+export const messageLinksApi = {
+  create: (messageId: string, onetime?: boolean) =>
+    api.post(`/messages/${messageId}/links`, { onetime }),
+  list: (messageId: string) => api.get(`/messages/${messageId}/links`),
+  delete: (linkId: string) => api.delete(`/messages/links/${linkId}`),
+};
+
 // ------------------ REACTIONS API ------------------
 export const reactionsApi = {
-  init: (messageId: string, sessionId: string, name?: string) => {
-    // CRITICAL FIX: Backend controller (messageController#initReaction) now expects `sessionid` (lowercase)
-    return api.post(`/reactions/init/${messageId}`, { sessionid: sessionId, name });
+  init: (
+    messageId: string,
+    sessionId: string,
+    name?: string,
+    linkId?: string
+  ) => {
+    // Backend expects sessionid in body and optional linkId
+    return api.post(`/reactions/init/${messageId}`, {
+      sessionid: sessionId,
+      name,
+      linkId,
+    });
   },
 
   uploadVideoToReaction: (reactionId: string, video: Blob) => {

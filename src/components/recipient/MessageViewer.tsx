@@ -24,6 +24,7 @@ interface MessageViewerProps {
   onSendTextReply?: (messageId: string, text: string) => Promise<void>;
   onInitReactionId?: (id: string) => void;
   onLocalRecordingComplete?: () => void;
+  linkId?: string;
 }
 
 const MessageViewer: React.FC<MessageViewerProps> = ({
@@ -34,6 +35,7 @@ const MessageViewer: React.FC<MessageViewerProps> = ({
   onSendTextReply,
   onInitReactionId,
   onLocalRecordingComplete,
+  linkId,
 }) => {
   const { user } = useAuth();
 
@@ -230,7 +232,12 @@ const MessageViewer: React.FC<MessageViewerProps> = ({
     try {
       const currentSessionId = String(sessionId); // Ensure it's a string
       // The console log should use currentSessionId too
-      const res = await reactionsApi.init(message.id, currentSessionId, recipientName || undefined);
+      const res = await reactionsApi.init(
+        message.id,
+        currentSessionId,
+        recipientName || undefined,
+        linkId
+      );
       if (res.data.reactionId) {
         setReactionId(res.data.reactionId);
         onInitReactionId?.(res.data.reactionId); 
@@ -279,6 +286,55 @@ const MessageViewer: React.FC<MessageViewerProps> = ({
     setCountdownComplete(true);
   };
 
+  const renderErrorCard = (
+    title: string,
+    messageText?: string,
+    showRefresh?: boolean
+  ) => (
+    <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center bg-neutral-50 px-4 py-2 dark:bg-neutral-900 sm:py-6">
+      <div className="card mx-auto max-w-md p-6 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 text-yellow-600 dark:text-yellow-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium text-neutral-900 dark:text-white text-center">{title}</h3>
+        {messageText && (
+          <div className="mt-4 rounded-md bg-blue-50 p-4 text-center dark:bg-blue-900/30">
+            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 text-center">
+              {messageText}
+            </p>
+          </div>
+        )}
+        {showRefresh && (
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="btn btn-primary bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600"
+            >
+              Refresh Page
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if (message.onetime && message.viewed) {
+    return renderErrorCard('Link Expired', MESSAGE_ERRORS.LINK_EXPIRED);
+  }
+
   if (!passcodeVerified && message.hasPasscode) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-neutral-50 px-4 py-2 dark:bg-neutral-900">
@@ -288,65 +344,35 @@ const MessageViewer: React.FC<MessageViewerProps> = ({
   }
 
   if (permissionError) {
+
     if (permissionError === REACTION_ERRORS.REACTION_LIMIT_CONTACT_SENDER) {
-      // Dedicated UI for Reaction Limit Error
-      return (
-        <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center bg-neutral-50 px-4 py-2 dark:bg-neutral-900 sm:py-6">
-          <div className="card mx-auto max-w-md p-6 text-center"> {/* Ensure 'card' class provides appropriate styling */}
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900 mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-neutral-900 dark:text-white text-center"> {/* Removed mt-4 as icon has mb-4 */}
-              Reaction Limit Reached
-            </h3>
-            <div className="mt-4 rounded-md bg-blue-50 p-4 dark:bg-blue-900/30 text-center">
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300 text-center">
-                {REACTION_ERRORS.REACTION_LIMIT_CONTACT_SENDER}
-              </p>
-            </div>
-            <div className="mt-6 flex justify-center">
-              <button
-                onClick={() => window.location.reload()}
-                className="btn btn-primary bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600" // Matched button style from PermissionRequest
-              >
-                Refresh Page
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    } else if (permissionError === MESSAGE_ERRORS.CONTENT_UNAVAILABLE) {
-      return (
-        <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center bg-neutral-50 px-4 py-2 dark:bg-neutral-900 sm:py-6">
-          <div className="card mx-auto max-w-md p-6 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900 mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-neutral-900 dark:text-white text-center">
-              {MESSAGE_ERRORS.CONTENT_UNAVAILABLE}
-            </h3>
-          </div>
-        </div>
-      );
-    } else {
-      // Fallback to PermissionRequest for other errors that might use this state
-      return (
-        <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center bg-neutral-50 px-4 py-2 dark:bg-neutral-900 sm:py-6">
-          <PermissionRequest
-            permissionType="both" // This is still hardcoded; might need review later if other errors use this path
-            errorMessage={permissionError}
-          />
-        </div>
-      );
+      return renderErrorCard('Reaction Limit Reached', REACTION_ERRORS.REACTION_LIMIT_CONTACT_SENDER, true);
     }
+    if (permissionError === MESSAGE_ERRORS.CONTENT_UNAVAILABLE) {
+      return renderErrorCard(MESSAGE_ERRORS.CONTENT_UNAVAILABLE);
+    }
+    if (
+      permissionError === MESSAGE_ERRORS.LINK_EXPIRED ||
+      permissionError === MESSAGE_ERRORS.ALREADY_VIEWED ||
+      permissionError.toLowerCase().includes('link expired')
+    ) {
+      return renderErrorCard('Link Expired', MESSAGE_ERRORS.LINK_EXPIRED);
+    }
+
+    return (
+      <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center bg-neutral-50 px-4 py-2 dark:bg-neutral-900 sm:py-6">
+        <PermissionRequest permissionType="both" errorMessage={permissionError} />
+      </div>
+    );
   }
 
   const renderMessageContent = () => (
     <div className="card w-full max-w-2xl mx-auto animate-slide-up">
+      {message.onetime && (
+        <div className="mb-4 rounded-md bg-red-100 p-2 text-center text-red-700 dark:bg-red-900/40 dark:text-red-300">
+          This link can only be viewed once.
+        </div>
+      )}
       {message.sender && (
         <div className="mb-4 flex items-center">
           <div className="h-10 w-10 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
@@ -511,8 +537,13 @@ const MessageViewer: React.FC<MessageViewerProps> = ({
             />
           </div>
         )}
-        {showRecorder && !isNameSubmitted && ( 
+        {showRecorder && !isNameSubmitted && (
           <div className="mb-4 w-full max-w-md mx-auto">
+            {message.onetime && (
+              <div className="mb-2 rounded-md bg-red-100 p-2 text-center text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                This link can only be viewed once.
+              </div>
+            )}
             {/* Removed isReactionLimitReached conditional message */}
             <label htmlFor="recipientName" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1 text-center">
               Say hello with your name

@@ -1,13 +1,17 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { classNames } from '../../utils/classNames';
 import Button from '../common/Button';
 import { showToast } from '../common/ErrorToast';
+import LinksModal from '../dashboard/LinksModal';
+import { messageLinksApi } from '../../services/api';
 
 interface LinkGeneratorProps {
   shareableLink: string;
   hasPasscode: boolean;
   passcode?: string;
+  messageId?: string;
+  initialStats?: { liveOneTime: number; expiredOneTime: number };
   className?: string;
 }
 
@@ -15,11 +19,52 @@ const LinkGenerator: React.FC<LinkGeneratorProps> = ({
   shareableLink,
   hasPasscode,
   passcode,
+  messageId,
+  initialStats,
   className,
 }) => {
   const [showQrCode, setShowQrCode] = useState(false);
   const [copied, setCopied] = useState(false);
   const passcodeInputRef = useRef<HTMLInputElement>(null);
+  const [isLinksModalOpen, setIsLinksModalOpen] = useState(false);
+  const [linkStats, setLinkStats] = useState(
+    initialStats || { liveOneTime: 0, expiredOneTime: 0 }
+  );
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!messageId) return;
+      try {
+        const res = await messageLinksApi.list(messageId);
+        if (res.data.stats) {
+          setLinkStats({
+            liveOneTime: res.data.stats.liveOneTime || 0,
+            expiredOneTime: res.data.stats.expiredOneTime || 0,
+          });
+        }
+      } catch {
+        // ignore
+      }
+    };
+    fetchStats();
+  }, [messageId]);
+
+  const handleLinksModalClose = () => {
+    setIsLinksModalOpen(false);
+    if (messageId) {
+      messageLinksApi
+        .list(messageId)
+        .then(res => {
+          if (res.data.stats) {
+            setLinkStats({
+              liveOneTime: res.data.stats.liveOneTime || 0,
+              expiredOneTime: res.data.stats.expiredOneTime || 0,
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  };
 
   // Removed getQrCodeUrl function
 
@@ -180,6 +225,17 @@ Passcode: ${passcode}
         </div>
       )}
 
+      {messageId && (
+        <div className="mt-4 flex items-center justify-between rounded-md bg-neutral-100 p-3 dark:bg-neutral-700">
+          <p className="text-sm text-neutral-700 dark:text-neutral-300">
+            One-time: {linkStats.liveOneTime} live / {linkStats.expiredOneTime} viewed
+          </p>
+          <Button size="sm" variant="outline" onClick={() => setIsLinksModalOpen(true)}>
+            Manage
+          </Button>
+        </div>
+      )}
+
       {/* Share options */}
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Button 
@@ -242,16 +298,24 @@ Passcode: ${passcode}
         </div>
       )}
 
+
       {/* Create another message button */}
       <div className="mt-6 text-center">
-        <Button 
-          as="a" 
+        <Button
+          as="a"
           href="/create"
           variant="primary"
         >
           Create Another Message
         </Button>
       </div>
+      {messageId && (
+        <LinksModal
+          isOpen={isLinksModalOpen}
+          onClose={handleLinksModalClose}
+          messageId={messageId}
+        />
+      )}
     </div>
   );
 };

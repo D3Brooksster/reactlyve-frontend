@@ -15,9 +15,15 @@ export const MESSAGE_ROUTES = {
   GET_ALL: `${API_BASE_URL}/messages`,
   GET_BY_ID: (id: string) => `${API_BASE_URL}/messages/${id}`,
   DELETE: (id: string) => `${API_BASE_URL}/messages/${id}/delete`,
-  VIEW: (id: string) => `${API_BASE_URL}/messages/shared/${id}`,
+  VIEW: (id: string) => `${API_BASE_URL}/messages/view/${id}`,
   VERIFY_PASSCODE: (id: string) => `${API_BASE_URL}/messages/${id}/verify-passcode`,
   SHARED: (id: string) => `${API_BASE_URL}/messages/shared/${id}`,
+};
+
+export const MESSAGE_LINK_ROUTES = {
+  CREATE: (messageId: string) => `${API_BASE_URL}/messages/${messageId}/links`,
+  LIST: (messageId: string) => `${API_BASE_URL}/messages/${messageId}/links`,
+  DELETE: (linkId: string) => `${API_BASE_URL}/messages/links/${linkId}`,
 };
 
 // Reaction Routes
