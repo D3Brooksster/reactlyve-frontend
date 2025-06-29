@@ -22,4 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env
+
+# TypeScript build info
+*.tsbuildinfo
+config.bat
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
