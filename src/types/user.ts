@@ -17,4 +17,8 @@ export interface User {
     moderateImages?: boolean;
     moderateVideos?: boolean;
     pendingManualReviews?: number;
+    googleId?: string;
+    microsoftId?: string;
+    facebookId?: string;
+    twitterId?: string;
 }

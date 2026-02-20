@@ -10,7 +10,7 @@ Reactlyve is a modern web application that allows users to create and share surp
 - **Generate unique shareable links** to send to recipients
 - **Record reactions** via webcam when recipients view messages
 - **Dashboard** for managing messages and viewing reactions
-- **Google OAuth authentication** for quick and secure sign in
+- **Social login** with Google, Microsoft, Facebook and Twitter
 - **Share links via QR codes** for easy access on any device
 - **Download reaction videos** to save or repost later
 - **Admin portal** for user management and content moderation
@@ -87,8 +87,35 @@ reactlyve-frontend/
    ```
    VITE_API_URL=http://localhost:8000/api
    VITE_CLOUDINARY_LOGO_ID=Reactlyve_Logo_bi78md
-  VITE_CLOUDINARY_LOGO_SCALE=0.3
+   VITE_CLOUDINARY_LOGO_SCALE=0.3
+   # OAuth provider credentials
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
+
+   MS_CLIENT_ID=your_microsoft_client_id
+   MS_CLIENT_SECRET=your_microsoft_client_secret
+   MS_CALLBACK_URL=http://localhost:3000/api/auth/microsoft/callback
+
+   FB_CLIENT_ID=your_facebook_app_id
+   FB_CLIENT_SECRET=your_facebook_app_secret
+   FB_CALLBACK_URL=http://localhost:3000/api/auth/facebook/callback
+
+   TWITTER_CONSUMER_KEY=your_twitter_consumer_key
+   TWITTER_CONSUMER_SECRET=your_twitter_consumer_secret
+   TWITTER_CALLBACK_URL=http://localhost:3000/api/auth/twitter/callback
    ```
+
+After registering each provider and adding the credentials to your `.env`, the frontend can trigger authentication using:
+
+```
+GET /api/auth/google
+GET /api/auth/microsoft
+GET /api/auth/facebook
+GET /api/auth/twitter
+```
+
+The backend handles each callback and redirects to `/auth/success`. Fetch the authenticated user via `/api/auth/me` to get all provider IDs.
 
    If `VITE_API_URL` is omitted, the app defaults to `https://api.reactlyve.com/api`.
    `VITE_CLOUDINARY_LOGO_ID` controls the Cloudinary overlay used in generated media.
@@ -132,12 +159,12 @@ use the correct environment settings.
 
 ### Authentication
 
-Reactlyve uses Google OAuth for authentication. The authentication flow is handled by the backend at `/api/auth/google`, which redirects back to the frontend at `/auth/success` after successful authentication.
+Reactlyve supports OAuth authentication with Google, Microsoft, Facebook and Twitter. Each provider can be initiated via `/api/auth/{provider}` and the backend redirects back to `/auth/success` after successful authentication.
 
 ```typescript
-// Example of initiating Google OAuth with basic host validation
-const handleLogin = () => {
-  const url = `${import.meta.env.VITE_API_URL}/auth/google`;
+// Example of initiating OAuth with basic host validation
+const handleLogin = (provider: 'google' | 'microsoft' | 'facebook' | 'twitter') => {
+  const url = `${import.meta.env.VITE_API_URL}/auth/${provider}`;
   const allowed = ['localhost', 'api.reactlyve.com'];
   if (allowed.includes(new URL(url).hostname)) {
     window.location.href = url;

@@ -4,6 +4,9 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.reactly
 // Auth Routes
 export const AUTH_ROUTES = {
   GOOGLE: `${API_BASE_URL}/auth/google`,
+  MICROSOFT: `${API_BASE_URL}/auth/microsoft`,
+  FACEBOOK: `${API_BASE_URL}/auth/facebook`,
+  TWITTER: `${API_BASE_URL}/auth/twitter`,
   USER: `${API_BASE_URL}/auth/user`,
   LOGOUT: `${API_BASE_URL}/auth/logout`,
 };

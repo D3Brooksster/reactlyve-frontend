@@ -3,11 +3,13 @@ import { authApi, profileApi } from '../services/api';
 import { User } from '../types/user';
 import { API_BASE_URL } from '../components/constants/apiRoutes';
 
+type OAuthProvider = 'google' | 'microsoft' | 'facebook' | 'twitter';
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   error: string | null;
-  login: () => void;
+  login: (provider?: OAuthProvider) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -38,9 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
-  const login = () => {
+  const login = (provider: OAuthProvider = 'google') => {
     setIsLoading(true);
-    const loginUrl = `${API_BASE_URL}/auth/google`;
+    const loginUrl = `${API_BASE_URL}/auth/${provider}`;
     try {
       const { hostname } = new URL(loginUrl);
       const allowedHosts = ['localhost', 'api.reactlyve.com'];
