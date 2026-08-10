@@ -55,7 +55,7 @@
     "@types/react": "~18.2.0",
     "@types/react-dom": "~18.2.0",
     "@types/uuid": "^9.x.x",
-    "@typescript-eslint/eslint-plugin": "^8.34.1",
+    "@typescript-eslint/eslint-plugin": "^8.66.0",
     "@typescript-eslint/parser": "^8.35.0",
     "@vitejs/plugin-react": "^4.4.1",
     "babel-jest": "^29.7.0",
