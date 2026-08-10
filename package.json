@@ -36,7 +36,7 @@
     "tailwindcss": "^4.1.11",
     "@tailwindcss/postcss": "^4.1.11",
     "uuid": "^9.x.x",
-    "zod": "^3.21.4"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.27.2",
